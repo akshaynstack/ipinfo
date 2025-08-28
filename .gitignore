@@ -1,0 +1,6 @@
+.env
+log.out
+node_modules
+logs
+test.sh
+loader.js
