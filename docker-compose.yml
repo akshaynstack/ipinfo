@@ -1,0 +1,61 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ipapi-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_DB: ipapi
+      # Local dev without password. DO NOT use in production.
+      POSTGRES_HOST_AUTH_METHOD: trust
+    ports:
+      - "8786:5432" # fixed local port (host 8786 -> container 5432)
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d ipapi"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    build:
+      context: .
+      target: builder
+    image: ipapi-hono:builder
+    container_name: ipapi-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      # Ensure in-network connection regardless of .env host URL
+      DATABASE_URL: postgresql://postgres@postgres:5432/ipapi
+    command: ["pnpm", "prisma", "migrate", "deploy"]
+    restart: "no"
+
+  app:
+    build: .
+    image: ipapi-hono:latest
+    container_name: ipapi-hono
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    env_file:
+      - .env
+    environment:
+      # Ensure in-network connection regardless of .env host URL
+      DATABASE_URL: postgresql://postgres@postgres:5432/ipapi
+    ports:
+      - "8787:8787" # fixed local port
+    # If you need to run migrations automatically on start, uncomment the below and ensure prisma is available at runtime
+    # command: ["sh", "-lc", "pnpm prisma migrate deploy && node dist/index.js"]
+
+volumes:
+  postgres_data:

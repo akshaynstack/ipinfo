@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import path from 'path';
 
 dotenv.config();
 
@@ -17,6 +18,6 @@ export const settings = {
   slackWebhookUrl: process.env.SLACK_WEBHOOK_URL,
 
   defaultRateLimitPerMin: Number(process.env.DEFAULT_RATE_LIMIT_PER_MIN ?? '60'),
-  // Path to GeoLite2 database. Default resolves to repo root GeoLite2-Country.mmdb when running from hono/ dir.
-  geoipDbPath: process.env.GEOIP_DB_PATH || new URL('../../GeoLite2-Country.mmdb', import.meta.url).pathname,
+  // Path to GeoLite2 database. Default resolves to repo root GeoLite2-Country.mmdb when running from project root or Docker WORKDIR.
+  geoipDbPath: process.env.GEOIP_DB_PATH || path.resolve(process.cwd(), 'GeoLite2-Country.mmdb'),
 };

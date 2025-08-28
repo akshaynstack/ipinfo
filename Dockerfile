@@ -34,6 +34,9 @@ FROM node:20-alpine AS runtime
 ENV NODE_ENV=production
 WORKDIR /app
 
+# Install runtime deps required by Prisma on Alpine
+RUN apk add --no-cache libc6-compat openssl
+
 # Copy production node_modules, built files, and required assets
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
