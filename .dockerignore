@@ -1,0 +1,24 @@
+# Dependencies
+node_modules
+pnpm-lock.yaml
+
+# VCS
+.git
+.gitignore
+
+# Logs and local output
+logs
+log.out
+
+# Env files (mount or use secrets)
+.env
+
+# Dev files and scripts
+manage.sh
+test.sh
+loader.js
+
+# Typescript sources are built in the builder stage, but still needed to copy
+# src
+# prisma migrations are copied as needed
+# dist is produced in builder
