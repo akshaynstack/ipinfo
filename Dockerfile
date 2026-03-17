@@ -41,6 +41,7 @@ RUN apk add --no-cache libc6-compat openssl
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/GeoLite2-Country.mmdb ./GeoLite2-Country.mmdb
+COPY --from=builder /app/prisma ./prisma
 COPY package.json ./
 
 # Expose the port used by the Hono server

@@ -27,20 +27,6 @@ services:
       timeout: 3s
       retries: 5
 
-  # One-off migration runner
-  migrate:
-    build:
-      context: .
-      target: builder
-    container_name: ipapi-migrate
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password}@postgres:5432/${POSTGRES_DB:-ipapi}?schema=public
-    command: ["pnpm", "prisma", "migrate", "deploy"]
-    restart: "no"
-
   app:
     build: .
     container_name: ipapi-hono
@@ -50,20 +36,20 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      migrate:
-        condition: service_completed_successfully
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password}@postgres:5432/${POSTGRES_DB:-ipapi}?schema=public
       REDIS_URL: redis://redis:6379/0
       ENVIRONMENT: production
       PORT: 8787
-      # Pass through other env vars
       ADMIN_API_KEY: ${ADMIN_API_KEY}
       SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
       API_KEY_PREFIX: ${API_KEY_PREFIX:-ipapi_}
       ENFORCE_HTTPS_FOR_API_KEYS: ${ENFORCE_HTTPS_FOR_API_KEYS:-true}
     ports:
       - "8787:8787"
+    # Run migrations before starting the app
+    command: >
+      sh -c "npx prisma migrate deploy && node dist/index.js"
 
 volumes:
   postgres_data:
