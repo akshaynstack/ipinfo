@@ -1,0 +1,21 @@
+# Development Dockerfile
+FROM node:20-alpine
+
+# Enable pnpm via corepack
+RUN corepack enable
+
+# Install system dependencies required for Prisma on Alpine
+RUN apk add --no-cache libc6-compat openssl curl
+
+WORKDIR /app
+
+# Expose ports
+# 8787: Hono App
+# 5555: Prisma Studio
+EXPOSE 8787 5555
+
+# We don't COPY files here because we'll mount them as volumes for hot-reloading
+# But we can pre-set the PATH for pnpm
+ENV PATH /app/node_modules/.bin:$PATH
+
+CMD ["sh", "-c", "pnpm install && pnpm prisma generate && pnpm run dev"]

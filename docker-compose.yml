@@ -6,56 +6,64 @@ services:
     container_name: ipapi-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_DB: ipapi
-      # Local dev without password. DO NOT use in production.
-      POSTGRES_HOST_AUTH_METHOD: trust
-    ports:
-      - "8786:5432" # fixed local port (host 8786 -> container 5432)
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres_password}
+      POSTGRES_DB: ${POSTGRES_DB:-ipapi}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d ipapi"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s
       timeout: 3s
-      retries: 20
+      retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: ipapi-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # One-off migration runner
   migrate:
     build:
       context: .
       target: builder
-    image: ipapi-hono:builder
     container_name: ipapi-migrate
     depends_on:
       postgres:
         condition: service_healthy
-    env_file:
-      - .env
     environment:
-      # Ensure in-network connection regardless of .env host URL
-      DATABASE_URL: postgresql://postgres@postgres:5432/ipapi
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password}@postgres:5432/${POSTGRES_DB:-ipapi}?schema=public
     command: ["pnpm", "prisma", "migrate", "deploy"]
     restart: "no"
 
   app:
     build: .
-    image: ipapi-hono:latest
     container_name: ipapi-hono
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
       migrate:
         condition: service_completed_successfully
-    env_file:
-      - .env
     environment:
-      # Ensure in-network connection regardless of .env host URL
-      DATABASE_URL: postgresql://postgres@postgres:5432/ipapi
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres_password}@postgres:5432/${POSTGRES_DB:-ipapi}?schema=public
+      REDIS_URL: redis://redis:6379/0
+      ENVIRONMENT: production
+      PORT: 8787
+      # Pass through other env vars
+      ADMIN_API_KEY: ${ADMIN_API_KEY}
+      SLACK_WEBHOOK_URL: ${SLACK_WEBHOOK_URL}
+      API_KEY_PREFIX: ${API_KEY_PREFIX:-ipapi_}
+      ENFORCE_HTTPS_FOR_API_KEYS: ${ENFORCE_HTTPS_FOR_API_KEYS:-true}
     ports:
-      - "8787:8787" # fixed local port
-    # If you need to run migrations automatically on start, uncomment the below and ensure prisma is available at runtime
-    # command: ["sh", "-lc", "pnpm prisma migrate deploy && node dist/index.js"]
+      - "8787:8787"
 
 volumes:
   postgres_data:
