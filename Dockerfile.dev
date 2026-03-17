@@ -1,8 +1,8 @@
 # Development Dockerfile
 FROM node:20-alpine
 
-# Enable pnpm via corepack
-RUN corepack enable
+# Enable pnpm via corepack and use version 8 to match lockfile
+RUN corepack enable && corepack prepare pnpm@8.15.5 --activate
 
 # Install system dependencies required for Prisma on Alpine
 RUN apk add --no-cache libc6-compat openssl curl

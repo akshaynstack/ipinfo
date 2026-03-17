@@ -3,8 +3,8 @@
 # ---- Builder ----
 FROM node:20-alpine AS builder
 
-# Enable pnpm via corepack
-RUN corepack enable
+# Enable pnpm via corepack and use version 8 to match lockfile
+RUN corepack enable && corepack prepare pnpm@8.15.5 --activate
 
 # Recommended Alpine deps for Prisma and Node
 RUN apk add --no-cache libc6-compat openssl
