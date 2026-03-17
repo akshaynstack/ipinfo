@@ -27,13 +27,14 @@ function getClientIp(c: any): string {
     remote: (c.req.raw as any).socket?.remoteAddress
   };
   
-  // Debug log (remove or adjust in production)
+  // Debug log
   console.log('IP Detection Headers:', headers);
 
-  if (headers.xff) return headers.xff.split(',')[0].trim();
-  if (headers.xri) return headers.xri.trim();
+  // Priority re-ordered: Specific client headers first, then generic proxy headers
   if (headers.cf) return headers.cf.trim();
   if (headers.tci) return headers.tci.trim();
+  if (headers.xri) return headers.xri.trim();
+  if (headers.xff) return headers.xff.split(',')[0].trim();
   if (headers.xci) return headers.xci.trim();
   return headers.remote ?? '0.0.0.0';
 }
