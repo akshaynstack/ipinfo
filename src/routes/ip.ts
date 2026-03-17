@@ -18,17 +18,24 @@ function getCountryInfo(iso: string | undefined) {
 }
 
 function getClientIp(c: any): string {
-  const xff = c.req.header('x-forwarded-for');
-  if (xff) return xff.split(',')[0].trim();
-  const xri = c.req.header('x-real-ip');
-  if (xri) return xri.trim();
-  const cf = c.req.header('cf-connecting-ip');
-  if (cf) return cf.trim();
-  const tci = c.req.header('true-client-ip');
-  if (tci) return tci.trim();
-  const xci = c.req.header('x-client-ip');
-  if (xci) return xci.trim();
-  return (c.req.raw as any).socket?.remoteAddress ?? '0.0.0.0';
+  const headers = {
+    xff: c.req.header('x-forwarded-for'),
+    xri: c.req.header('x-real-ip'),
+    cf: c.req.header('cf-connecting-ip'),
+    tci: c.req.header('true-client-ip'),
+    xci: c.req.header('x-client-ip'),
+    remote: (c.req.raw as any).socket?.remoteAddress
+  };
+  
+  // Debug log (remove or adjust in production)
+  console.log('IP Detection Headers:', headers);
+
+  if (headers.xff) return headers.xff.split(',')[0].trim();
+  if (headers.xri) return headers.xri.trim();
+  if (headers.cf) return headers.cf.trim();
+  if (headers.tci) return headers.tci.trim();
+  if (headers.xci) return headers.xci.trim();
+  return headers.remote ?? '0.0.0.0';
 }
 
 ip.get('/ip', getCurrentApiKey, async (c) => {
