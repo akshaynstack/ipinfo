@@ -49,7 +49,7 @@ services:
       - "8787:8787"
     # Run migrations before starting the app
     command: >
-      sh -c "pnpm prisma migrate deploy && node dist/index.js"
+      sh -c "./node_modules/.bin/prisma migrate deploy && node dist/index.js"
 
 volumes:
   postgres_data:
